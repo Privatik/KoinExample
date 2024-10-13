@@ -2,14 +2,16 @@ package org.example
 
 import kotlin.reflect.KClass
 
-object ServiceLocator{
-    private val instances = hashMapOf<String, Provider<*>>()
+typealias Definition<T> = ServiceLocator.() -> T
 
-    fun <T: Any> get(
+object ServiceLocator{
+    private val _instances = hashMapOf<String, Provider<*>>()
+    val instances: Map<String, Provider<*>> = _instances
+
+    inline fun <reified T: Any> get(
         qualifier: String? = null, // Добавелен qualifier что бы различать одинаковые обьекты
-        clazz: KClass<T>
     ): T {
-        val indexKey = indexKey(qualifier, clazz)
+        val indexKey = indexKey(qualifier, T::class)
 
         val definition = instances[indexKey] ?: error("Не найден объект")
         @Suppress("UNCHECKED_CAST")
@@ -20,7 +22,7 @@ object ServiceLocator{
     fun loadModules(vararg modules: Module){
         modules.forEach { module: Module ->
             module.mappings.forEach { (indexKey, factory) ->
-                instances[indexKey] = factory
+                _instances[indexKey] = factory
             }
         }
     }
@@ -28,7 +30,7 @@ object ServiceLocator{
     fun unLoadModules(vararg modules: Module){
         modules.forEach { module: Module ->
             module.mappings.keys.forEach { key ->
-                instances.remove(key)
+                _instances.remove(key)
             }
         }
     }
@@ -48,7 +50,7 @@ class Module {
 
     inline fun <reified T: Any> factory(
         qualifier: String? = null,
-        noinline definition: () -> T
+        noinline definition: Definition<T>
     ) {
         val indexKey = indexKey(qualifier, T::class)
         mappings[indexKey] = FactoryProvider(definition)
@@ -56,7 +58,7 @@ class Module {
 
     inline fun <reified T: Any> single(
         qualifier: String? = null,
-        noinline definition: () -> T
+        noinline definition: Definition<T>
     ) {
         val indexKey = indexKey(qualifier, T::class)
         mappings[indexKey] = SingletonProvider(definition)
@@ -69,16 +71,16 @@ fun myModule(block: Module.() -> Unit): Module {
 
 //В Koin данный класс носит имя InstanceFactory
 abstract class Provider<T>(
-    private val definition: () -> T
+    private val definition: Definition<T>
 ) {
     protected fun create(): T {
-        return definition.invoke()
+        return definition.invoke(ServiceLocator)
     }
     abstract fun get(): T
 }
 
 
-class SingletonProvider<T>(definition: () -> T): Provider<T>(definition){
+class SingletonProvider<T>(definition: Definition<T>): Provider<T>(definition){
     private var instance: T? = null
 
     override fun get(): T {
@@ -91,7 +93,7 @@ class SingletonProvider<T>(definition: () -> T): Provider<T>(definition){
     }
 }
 
-class FactoryProvider<T>(definition: () -> T): Provider<T>(definition){
+class FactoryProvider<T>(definition: Definition<T>): Provider<T>(definition){
 
     override fun get(): T = create()
 }
