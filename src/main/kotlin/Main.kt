@@ -29,9 +29,18 @@ class Car(private val engine: Engine) {
 fun main() {
     setupMyKoin()
 
-    Car(engine = ServiceLocator.get(Engine::class)).start()
+    Car(engine = ServiceLocator.get(qualifier = "Gasoline", clazz = Engine::class)).start()
+    Car(engine = ServiceLocator.get(qualifier = "Electric", clazz = Engine::class)).start()
 }
 
 fun setupMyKoin(){
-    ServiceLocator.save(Engine::class) { ElectricEngine() }
+    ServiceLocator.save(
+        qualifier = "Electric",
+        Engine::class
+    ) { ElectricEngine() }
+
+    ServiceLocator.save(
+        qualifier = "Gasoline",
+        Engine::class
+    ) { GasolineEngine() }
 }
