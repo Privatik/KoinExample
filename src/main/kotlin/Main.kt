@@ -29,8 +29,15 @@ class Car(private val engine: Engine) {
 fun main() {
     setupMyKoin()
 
-    Car(engine = ServiceLocator.get(qualifier = "Gasoline", clazz = Engine::class)).start()
-    Car(engine = ServiceLocator.get(qualifier = "Electric", clazz = Engine::class)).start()
+    val gasEngine1 = ServiceLocator.get(qualifier = "Gasoline", clazz = Engine::class)
+    val gasEngine2 = ServiceLocator.get(qualifier = "Gasoline", clazz = Engine::class)
+
+    println("reference is ${gasEngine1 === gasEngine2}")
+
+    val engine1 = ServiceLocator.get(clazz = Engine::class)
+    val engine2 = ServiceLocator.get(clazz = Engine::class)
+
+    println("reference is ${engine1 === engine2}")
 }
 
 fun setupMyKoin(){
@@ -38,13 +45,8 @@ fun setupMyKoin(){
 }
 
 val engineModule = myModule {
-    save(
-        qualifier = "Electric",
-        Engine::class
-    ) { ElectricEngine() }
+    factory<Engine>(qualifier = "Electric") { ElectricEngine() }
+    factory<Engine>(qualifier = "Gasoline") { GasolineEngine() }
 
-    save(
-        qualifier = "Gasoline",
-        Engine::class
-    ) { GasolineEngine() }
+    single<Engine> { ElectricEngine() }
 }
