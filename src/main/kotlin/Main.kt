@@ -20,26 +20,30 @@ class GasolineEngine : Engine {
 }
 
 // Класс, использующий зависимость
-class Car(private val engine: Engine) {
+class Car(
+    private val engine: Engine,
+    private val ownerName: String
+) {
     fun start() {
         engine.start()
+        println("The name of the owner is $ownerName")
     }
 }
 
 fun main() {
     setupMyKoin()
 
-    val gasEngine1: Engine = ServiceLocator.get(qualifier = "Gasoline")
-    val gasEngine2: Engine = ServiceLocator.get(qualifier = "Gasoline")
+    val gasEngine1: Engine by inject(qualifier = "Gasoline")
+    val gasEngine2: Engine by inject(qualifier = "Gasoline")
 
     println("reference is ${gasEngine1 === gasEngine2}")
 
-    val engine1: Engine = ServiceLocator.get()
-    val engine2: Engine = ServiceLocator.get()
+    val engine1: Engine by inject()
+    val engine2: Engine by inject()
 
     println("reference is ${engine1 === engine2}")
 
-    val car: Car = ServiceLocator.get()
+    val car: Car by inject(parameters = { parameters("Ivan") })
     car.start()
 }
 
@@ -55,5 +59,5 @@ val engineModule = myModule {
 }
 
 val carModule = myModule {
-    single { Car(engine = get()) }
+    single { parameters -> Car(engine = get(), ownerName = parameters[0]) }
 }
