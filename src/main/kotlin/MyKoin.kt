@@ -5,16 +5,6 @@ import kotlin.reflect.KClass
 object ServiceLocator{
     private val instances = hashMapOf<String, () -> Any>()
 
-    fun <T: Any> save(
-        qualifier: String? = null, // Добавелен qualifier что бы различать одинаковые обьекты
-        clazz: KClass<out T>,
-        definition: () -> T
-    ) {
-        val indexKey = indexKey(qualifier, clazz)
-        instances[indexKey] = definition
-    }
-
-
     fun <T: Any> get(
         qualifier: String? = null, // Добавелен qualifier что бы различать одинаковые обьекты
         clazz: KClass<T>
@@ -25,6 +15,23 @@ object ServiceLocator{
         @Suppress("UNCHECKED_CAST")
         return definition.invoke() as T
     }
+
+
+    fun loadModules(vararg modules: Module){
+        modules.forEach { module: Module ->
+            module.mappings.forEach { (indexKey, factory) ->
+                instances[indexKey] = factory
+            }
+        }
+    }
+
+    fun unLoadModules(vararg modules: Module){
+        modules.forEach { module: Module ->
+            module.mappings.keys.forEach { key ->
+                instances.remove(key)
+            }
+        }
+    }
 }
 
 // Генерация cтроки из qualifier и clazz что бы создавать меньше обьектов
@@ -33,4 +40,22 @@ fun indexKey(
     clazz: KClass<*>,
 ): String {
     return "${clazz.java.name}:${qualifier.orEmpty()}"
+}
+
+class Module {
+
+    val mappings = hashMapOf<String, () -> Any>()
+
+    fun save(
+        qualifier: String? = null,
+        clazz: KClass<out Any>,
+        definition: () -> Any
+    ) {
+        val indexKey = indexKey(qualifier, clazz)
+        mappings[indexKey] = definition
+    }
+}
+
+fun myModule(block: Module.() -> Unit): Module {
+    return Module().apply(block)
 }

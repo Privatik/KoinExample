@@ -34,12 +34,16 @@ fun main() {
 }
 
 fun setupMyKoin(){
-    ServiceLocator.save(
+    ServiceLocator.loadModules(engineModule)
+}
+
+val engineModule = myModule {
+    save(
         qualifier = "Electric",
         Engine::class
     ) { ElectricEngine() }
 
-    ServiceLocator.save(
+    save(
         qualifier = "Gasoline",
         Engine::class
     ) { GasolineEngine() }
